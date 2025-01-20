@@ -64,7 +64,7 @@ import (
   "xxx/dal/cache"
   "xxx/dal/devicedb"
   "xxx/dal/devicedb/model"
-  "github.com/sunmi-OS/gocore/v2/utils/mlcache"
+  "github.com/sunmi-OS/gocore-contrib/mlcache"
 )
 
 const DeviceInfoCachePrefix = "di"
@@ -92,7 +92,7 @@ func main() {
 
 ```
 import(
-  "github.com/sunmi-OS/gocore/v2/utils/mlcache"
+  "github.com/sunmi-OS/gocore-contrib/mlcache"
   ristrettoStore "github.com/eko/gocache/store/ristretto/v4"
 )
 
