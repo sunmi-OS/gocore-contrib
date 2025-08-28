@@ -1,12 +1,12 @@
 module github.com/sunmi-OS/gocore-contrib/mlcache
 
-go 1.22
+go 1.20
 
 require (
 	github.com/bytedance/sonic v1.14.0
 	github.com/dgraph-io/ristretto v0.2.0
-	github.com/eko/gocache/lib/v4 v4.2.0
-	github.com/eko/gocache/store/ristretto/v4 v4.2.2
+	github.com/eko/gocache/lib/v4 v4.1.6
+	github.com/eko/gocache/store/ristretto/v4 v4.2.1
 	github.com/redis/go-redis/v9 v9.7.0
 	github.com/spf13/cast v1.7.1
 	github.com/sunmi-OS/gocore/v2 v2.1.58
@@ -69,7 +69,6 @@ require (
 	go.opentelemetry.io/otel/metric v1.24.0 // indirect
 	go.opentelemetry.io/otel/sdk v1.24.0 // indirect
 	go.opentelemetry.io/otel/trace v1.24.0 // indirect
-	go.uber.org/mock v0.4.0 // indirect
 	go.uber.org/multierr v1.10.0 // indirect
 	go.uber.org/zap v1.27.0 // indirect
 	golang.org/x/arch v0.3.0 // indirect
