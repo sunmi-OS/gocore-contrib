@@ -18,7 +18,10 @@ var (
 	ErrInNotString = ecode.NewV2(-1, "input is not string")
 )
 
-const DefaultRetryTime = 3
+const (
+	DefaultRetryTime = 3
+	BatchUnlinkCount = 10000 // redis unlink一次删除的key数量
+)
 
 type SimpleReader struct {
 	ml        MLCache
@@ -100,11 +103,32 @@ func NewSimpleReader(client *redis.Client, callback SimpleCallback, simpleOpt ..
 		},
 		CleanCacheHandler: func(ctx context.Context, key string) error {
 			cacheKey := GetCacheKey(sOpt.CacheKeyPrefix, key)
-			err := client.Del(ctx, cacheKey).Err()
+			err := client.Unlink(ctx, cacheKey).Err()
 			if err != nil {
 				glog.ErrorC(ctx, "CleanCacheHandler failed key:%s cacheKey:%s err %s", key, cacheKey, err)
 			}
 			return err
+		},
+		BatchCleanCacheHandler: func(ctx context.Context, keys []string) error {
+			cacheKeys := make([]string, 0, len(keys))
+			for _, key := range keys {
+				cacheKey := GetCacheKey(sOpt.CacheKeyPrefix, key)
+				cacheKeys = append(cacheKeys, cacheKey)
+			}
+
+			// 把cacheKeys的删除拆分成1w个一次
+			for i := 0; i < len(cacheKeys); i += BatchUnlinkCount {
+				end := i + BatchUnlinkCount
+				if end > len(cacheKeys) {
+					end = len(cacheKeys)
+				}
+				err := client.Unlink(ctx, cacheKeys[i:end]...).Err()
+				if err != nil {
+					glog.ErrorC(ctx, "BatchCleanCacheHandler failed key:%s cacheKey:%s err %s", keys, cacheKeys[i:end], err)
+					return err
+				}
+			}
+			return nil
 		},
 		Decoder: func(input interface{}, result interface{}) error {
 			if value, ok := input.(string); ok {
@@ -151,6 +175,10 @@ func (m *SimpleReader) Get(ctx context.Context, key string, value interface{}, o
 
 func (m *SimpleReader) Delete(ctx context.Context, key string) error {
 	return m.ml.Clean(ctx, key)
+}
+
+func (m *SimpleReader) BatchDelete(ctx context.Context, keys []string) error {
+	return m.ml.BatchClean(ctx, keys)
 }
 
 func GetPointer(value interface{}) interface{} {
