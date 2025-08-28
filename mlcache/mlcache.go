@@ -58,6 +58,7 @@ type MLCache interface {
 	SetL2(ctx context.Context, key string, val interface{}, opt ...Opt) error
 	Get(ctx context.Context, key string, val interface{}, opt ...Opt) (CacheStatus, error)
 	Clean(ctx context.Context, key string) error
+	BatchClean(ctx context.Context, keys []string) error
 }
 
 type GetCacheHandler func(ctx context.Context, key string) (val interface{}, found bool, err error)
@@ -65,6 +66,8 @@ type GetCacheHandler func(ctx context.Context, key string) (val interface{}, fou
 type SetCacheHandler func(ctx context.Context, key string, val interface{}, ttl *time.Duration) error
 
 type CleanCacheHandler func(ctx context.Context, key string) error
+
+type BatchCleanCacheHandler func(ctx context.Context, keys []string) error
 
 type Encoder func(val interface{}) (str interface{}, err error)
 
@@ -78,10 +81,11 @@ type LC struct {
 	Name      string
 	LevelName string
 	// retry times when get/set handler failed
-	Retry             int
-	GetCacheHandler   GetCacheHandler
-	SetCacheHandler   SetCacheHandler
-	CleanCacheHandler CleanCacheHandler
+	Retry                  int
+	GetCacheHandler        GetCacheHandler
+	SetCacheHandler        SetCacheHandler
+	CleanCacheHandler      CleanCacheHandler
+	BatchCleanCacheHandler BatchCleanCacheHandler
 	// encoder and decoder
 	Encoder Encoder
 	Decoder Decoder
@@ -148,7 +152,14 @@ func (lc *LC) Clean(ctx context.Context, key string) (err error) {
 		return ErrCleanHanderNotFound
 	}
 	return lc.CleanCacheHandler(ctx, key)
+}
 
+func (lc *LC) BatchClean(ctx context.Context, keys []string) (err error) {
+	if lc.BatchCleanCacheHandler == nil {
+		glog.WarnC(ctx, "%v lc.BatchCleanCacheHandler: clean handler not found", lc.Name)
+		return ErrCleanHanderNotFound
+	}
+	return lc.BatchCleanCacheHandler(ctx, keys)
 }
 
 type mLCache struct {
@@ -305,6 +316,16 @@ func (mlc *mLCache) SetL2(ctx context.Context, key string, val interface{}, opt 
 func (mlc *mLCache) Clean(ctx context.Context, key string) error {
 	if mlc.L2 != nil {
 		err := mlc.L2.Clean(ctx, key)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (mlc *mLCache) BatchClean(ctx context.Context, keys []string) error {
+	if mlc.L2 != nil {
+		err := mlc.L2.BatchClean(ctx, keys)
 		if err != nil {
 			return err
 		}
